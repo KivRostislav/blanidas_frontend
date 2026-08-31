@@ -14,6 +14,22 @@ const useRepairRequestById = (id: string) => {
     })
 }
 
+const useActiveRepairRequestByEquipmentId = (equipmentId: string, enabled: boolean) => {
+    const listFn = listRepairRequestsUseCase(RepairRequestRepository);
+    const query = {
+        pagination: { page: 1, limit: 1 },
+        filters: { equipmentId },
+        sorting: { sortBy: "date" as const, sortOrder: "desc" as const },
+    };
+
+    return useQuery({
+        queryKey: ['repair-request', 'active-by-equipment', equipmentId],
+        queryFn: () => listFn(query),
+        enabled: enabled && !!equipmentId,
+        select: (data) => data.items.find(request => request.lastStatus !== "finished") ?? null,
+    });
+}
+
 const repairRequestHooks = createCrudHooks(
     "repair-request",
     listRepairRequestsUseCase(RepairRequestRepository),
@@ -33,4 +49,5 @@ export {
     useUpdateRepairRequest,
     useDeleteRepairRequest,
     useRepairRequestById,
+    useActiveRepairRequestByEquipmentId,
 };

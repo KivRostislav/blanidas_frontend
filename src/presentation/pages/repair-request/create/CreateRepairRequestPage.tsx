@@ -5,10 +5,16 @@ import type {Urgency} from "@/domain/entities/repair-request.ts";
 import RequestSuccess from "@/presentation/pages/repair-request/create/RequestSuccess.tsx";
 import BaseLayout from "@/presentation/components/layouts/BaseLayout.tsx";
 import {useEquipmentById} from "@/presentation/hooks/entities/equipment.ts";
-import {useCreateRepairRequest} from "@/presentation/hooks/entities/repair-request.ts";
+import {
+    useActiveRepairRequestByEquipmentId,
+    useCreateRepairRequest
+} from "@/presentation/hooks/entities/repair-request.ts";
 import Notification from "@/presentation/components/layouts/Notification.tsx";
 import EquipmentNotFound from "@/presentation/pages/repair-request/create/EquipmentNotFound.tsx";
 import {useTimedError} from "@/presentation/hooks/useTimedError.ts";
+import {useAuthSession} from "@/presentation/hooks/auth.ts";
+import ExistingRepairRequestModal from "@/presentation/pages/repair-request/create/ExistingRepairRequestModal.tsx";
+import {useEffect, useState} from "react";
 
 interface RepairRequestFormData {
     description: string;
@@ -18,11 +24,31 @@ interface RepairRequestFormData {
 
 const CreateRepairRequestPage = () => {
     const { equipmentId } = Route.useParams();
+    const navigate = Route.useNavigate();
+    const session = useAuthSession();
+    const isLoggedIn = !!session;
 
     const [showCreateRepairRequestErrorMessage, setShowCreateRepairRequestErrorMessage] = useTimedError<boolean>(false, 5000);
+    const [showExistingRepairRequestModal, setShowExistingRepairRequestModal] = useState(false);
 
     const equipment = useEquipmentById(equipmentId);
-    const createRepairRequest = useCreateRepairRequest()
+    const createRepairRequest = useCreateRepairRequest();
+    const { data: activeRepairRequest } = useActiveRepairRequestByEquipmentId(equipmentId, isLoggedIn);
+
+    useEffect(() => {
+        if (isLoggedIn && activeRepairRequest) {
+            setShowExistingRepairRequestModal(true);
+        }
+    }, [isLoggedIn, activeRepairRequest]);
+
+    const goToRepairRequestDetails = () => {
+        if (!activeRepairRequest) return;
+
+        void navigate({
+            to: "/dashboard/repair-requests/$repairRequestId",
+            params: { repairRequestId: activeRepairRequest.id },
+        });
+    };
 
     const sendForm = (data: RepairRequestFormData) => {
         createRepairRequest.mutate({
@@ -36,6 +62,11 @@ const CreateRepairRequestPage = () => {
 
     return (
         <BaseLayout>
+            <ExistingRepairRequestModal
+                isOpen={showExistingRepairRequestModal}
+                onClose={() => setShowExistingRepairRequestModal(false)}
+                onGoToDetails={goToRepairRequestDetails}
+            />
             {equipment.isError
                 ? <EquipmentNotFound />
                 : (

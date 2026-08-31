@@ -161,7 +161,7 @@ const StaffTable = ({ staff, institutions, update, delete_ }: Props) => {
                                     <div className="flex justify-between mt-3 space-y-1">
                                         <div className="flex items-center gap-2 text-sm text-slate-700">
                                             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                            <span className="truncate">{member.department || "—"}</span>
+                                            {member.department || "—"}
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-slate-600">
                                             <CalendarDays className="w-3 h-3 text-slate-400" />
